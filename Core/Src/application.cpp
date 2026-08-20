@@ -42,10 +42,10 @@ class ButtonProcess : public CSProcessStatic<512> {
     while (true) {
       in >> ev;
       if (ev.pressed) {
+        printf("Blue button pressed\r\n");
+      } else {
         printf("Blue button released\r\n");
         out << t;
-      } else {
-        printf("Blue button pressed\r\n");
       }
     }
   }

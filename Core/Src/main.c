@@ -759,7 +759,7 @@ if (Button == BUTTON_USER) {
 
 // Determine if the button is pressed or released by reading the pin
 
-bool pressed = (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == GPIO_PIN_RESET);
+bool pressed = (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == GPIO_PIN_SET);
 
 // Send event via CSP
 
