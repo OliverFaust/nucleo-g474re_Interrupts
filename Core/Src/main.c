@@ -23,9 +23,11 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdbool.h>
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
+typedef StaticTask_t osStaticThreadDef_t;
 /* USER CODE BEGIN PTD */
 
 
@@ -54,10 +56,15 @@ UART_HandleTypeDef huart1;
 
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
+uint32_t defaultTaskBuffer[ 512 ];
+osStaticThreadDef_t defaultTaskControlBlock;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
+  .stack_mem = &defaultTaskBuffer[0],
+  .stack_size = sizeof(defaultTaskBuffer),
+  .cb_mem = &defaultTaskControlBlock,
+  .cb_size = sizeof(defaultTaskControlBlock),
   .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 512 * 4
 };
 /* USER CODE BEGIN PV */
 
@@ -360,6 +367,13 @@ static void MX_GPIO_Init(void)
 static void ButtonExtiCallback(void)
 {
   csp_send_button_event(HAL_GPIO_ReadPin(USER_BUTTON_GPIO_PORT, USER_BUTTON_PIN) == GPIO_PIN_SET);
+}
+
+void vAssertCalled(const char *file, int line)
+{
+  taskDISABLE_INTERRUPTS();
+  printf("\r\nconfigASSERT failed: %s:%d\r\n", file, line);
+  for (;;) { }
 }
 /* USER CODE END 4 */
 
