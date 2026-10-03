@@ -1,0 +1,32 @@
+# elf: baseline.elf sha256=e8c0260557c904e46d6753806cb8da27a34e2a61c3af8f9e11c2bad1f35ff7f4
+# port: /dev/serial/by-id/usb-STMicroelectronics_STLINK-V3_002000353234510836303532-if02
+# start: 2026-10-04 00:25:55
+974 Received: 403974
+Send: 403975 Received: 403975
+Send: 403976 Received: 403976
+Send: 403977 Received: 403977
+Send: 403978 Received: 403978
+Send: 403979 Received: 403979
+Send: 403980 Received: 403980
+Send: 403981 Received: 403981
+Send: 403982 Received: 403982
+Send: 403983 Received: 403983
+Send: 403984 Received: 403984
+Send: 403985 Received: 403985
+Send: 403986 Received: 403986
+Send: 403987 Received: 403987
+Send: 403988 Received: 40398Welcome to STM32 world !
+
+=== STM32 FreeRTOS + CSP4CMSIS bootstrap ===
+
+--- Single Sender & Receiver + Button ISR ---
+Blue button released
+Send: 0 Received: 0
+Blue button released
+Send: 1 Received: 1
+Blue button released
+Send: 2 Received: 2
+
+# TIMEOUT after 20 s
+
+# end: 2026-10-04 00:26:16 (20 s)

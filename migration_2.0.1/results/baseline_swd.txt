@@ -1,0 +1,9 @@
+stack  ButtonProcess  2048 B: used   344 B, never touched  1704 B
+stack  Sender        2048 B: used   216 B, never touched  1832 B
+stack  Receiver      2048 B: used   520 B, never touched  1528 B
+thread ButtonProcess priority  2  name "ButtonProcess"
+thread Sender       priority  2  name "Sender"
+thread Receiver     priority  2  name "Receiver"
+FreeRTOS heap: free 28280 B, minimum ever free 19976 B, allocations 7, frees 2
+newlib sbrk: __sbrk_heap_end = 0x2000a838 (_end = 0x2000a430)
+EXTI line 13: IMR1=1 RTSR1=1 FTSR1=1; NVIC EXTI15_10 priority 15
