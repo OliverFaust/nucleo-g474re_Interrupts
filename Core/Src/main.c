@@ -89,23 +89,9 @@ static void MX_USART1_UART_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
-
-#ifdef __cplusplus
-
-extern "C" {
-
-#endif
-
-void csp_app_main_init(void);
-
-void csp_send_button_event(bool pressed);
-
-#ifdef __cplusplus
-
-}
-
-#endif
-
+void csp_app_main_init(void);              /* application.cpp */
+void csp_send_button_event(bool pressed);  /* application.cpp */
+static void ButtonExtiCallback(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -224,6 +210,8 @@ int main(void)
   button.Pull  = GPIO_PULLDOWN;          /* as BSP_PB_Init() */
   button.Speed = GPIO_SPEED_FREQ_HIGH;   /* as BSP_PB_Init() */
   HAL_GPIO_Init(USER_BUTTON_GPIO_PORT, &button);
+  /* Our callback instead of the BSP's (which would call CubeMX's demo BSP_PB_Callback()). */
+  HAL_EXTI_RegisterCallback(&hpb_exti[BUTTON_USER], HAL_EXTI_COMMON_CB_ID, ButtonExtiCallback);
 
   /* -- Sample board code to send message over COM1 port ---- */
   printf("Welcome to STM32 world !\r\n");
@@ -394,9 +382,12 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-
-
+/* Blue button interrupt (EXTI line 13, both edges): runs in the ISR, called by
+   BSP_PB_IRQHandler() -> HAL_EXTI_IRQHandler(). Reports press or release to the CSP network. */
+static void ButtonExtiCallback(void)
+{
+  csp_send_button_event(HAL_GPIO_ReadPin(USER_BUTTON_GPIO_PORT, USER_BUTTON_PIN) == GPIO_PIN_SET);
+}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
