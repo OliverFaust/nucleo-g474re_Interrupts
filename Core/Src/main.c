@@ -1,37 +1,20 @@
 /* USER CODE BEGIN Header */
-
 /**
-
-******************************************************************************
-
-* @file : main.c
-
-* @brief : Main program body
-
-******************************************************************************
-
-* @attention
-
-*
-
-* Copyright (c) 2026 STMicroelectronics.
-
-* All rights reserved.
-
-*
-
-* This software is licensed under terms that can be found in the LICENSE file
-
-* in the root directory of this software component.
-
-* If no LICENSE file comes with this software, it is provided AS-IS.
-
-*
-
-******************************************************************************
-
-*/
-
+  ******************************************************************************
+  * @file           : main.c
+  * @brief          : Main program body
+  ******************************************************************************
+  * @attention
+  *
+  * Copyright (c) 2026 STMicroelectronics.
+  * All rights reserved.
+  *
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
+  *
+  ******************************************************************************
+  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -145,27 +128,19 @@ int main(void)
   osKernelInitialize();
 
   /* USER CODE BEGIN RTOS_MUTEX */
-
-/* add mutexes, ... */
-
+  /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
-
-/* add semaphores, ... */
-
+  /* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
-
-/* start timers, add new ones, ... */
-
+  /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
-
-/* add queues, ... */
-
+  /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -179,9 +154,7 @@ int main(void)
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
-
-/* add events, ... */
-
+  /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
 
   /* Initialize led */
@@ -391,32 +364,20 @@ static void ButtonExtiCallback(void)
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
-
 /**
-
-* @brief Function implementing the defaultTask thread.
-
-* @param argument: Not used
-
-* @retval None
-
-*/
-
+  * @brief  Function implementing the defaultTask thread.
+  * @param  argument: Not used
+  * @retval None
+  */
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
-
-/* Infinite loop */
-
-for(;;)
-
-{
-
-osDelay(1);
-
-}
-
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
   /* USER CODE END 5 */
 }
 
@@ -466,17 +427,11 @@ void BSP_PB_Callback(Button_TypeDef Button)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-
-/* User can add his own implementation to report the HAL error return state */
-
-__disable_irq();
-
-while (1)
-
-{
-
-}
-
+  /* User can add his own implementation to report the HAL error return state */
+  __disable_irq();
+  while (1)
+  {
+  }
   /* USER CODE END Error_Handler_Debug */
 }
 #ifdef USE_FULL_ASSERT
@@ -490,11 +445,8 @@ while (1)
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
-
-/* User can add his own implementation to report the file name and line number,
-
-ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-
+  /* User can add his own implementation to report the file name and line number,
+     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
