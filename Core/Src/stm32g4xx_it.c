@@ -22,6 +22,7 @@
 #include "stm32g4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,7 +47,7 @@
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN PFP */
-
+void csp_send_button_event(bool pressed);  /* application.cpp */
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -179,7 +180,12 @@ void TIM1_UP_TIM16_IRQHandler(void)
 void EXTI15_10_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI15_10_IRQn 0 */
-
+  /* Blue button (PC13, EXTI line 13): report press or release to the CSP network.
+     Checked before BSP_PB_IRQHandler(), which clears the pending flag. */
+  if (__HAL_GPIO_EXTI_GET_IT(USER_BUTTON_PIN) != 0U)
+  {
+    csp_send_button_event(HAL_GPIO_ReadPin(USER_BUTTON_GPIO_PORT, USER_BUTTON_PIN) == GPIO_PIN_SET);
+  }
   /* USER CODE END EXTI15_10_IRQn 0 */
   BSP_PB_IRQHandler(BUTTON_USER);
   /* USER CODE BEGIN EXTI15_10_IRQn 1 */

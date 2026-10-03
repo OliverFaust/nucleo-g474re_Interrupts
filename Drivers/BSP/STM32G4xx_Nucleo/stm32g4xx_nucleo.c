@@ -293,7 +293,7 @@ int32_t BSP_PB_Init(Button_TypeDef Button, ButtonMode_TypeDef ButtonMode)
   else /* (ButtonMode == BUTTON_MODE_EXTI) */
   {
     /* Configure Button pin as input with External interrupt */
-    gpio_init_structure.Mode = GPIO_MODE_IT_RISING_FALLING;
+    gpio_init_structure.Mode = GPIO_MODE_IT_RISING;
 
     HAL_GPIO_Init(BUTTON_PORT[Button], &gpio_init_structure);
 
