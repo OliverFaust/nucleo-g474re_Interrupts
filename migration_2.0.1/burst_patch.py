@@ -22,8 +22,8 @@ if ver == 'old':
   vTaskDelete(NULL);''', '''  @@BURST@@;
   vTaskDelete(NULL);''')
 else:
-    rep('g_button_isr.putFromISR(ButtonEvent{pressed});',
-        'uint32_t s = ++t_isr; if (!g_button_isr.putFromISR(ButtonEvent{pressed, s})) t_fail++;')
+    rep('buttonIsr.putFromISR(ButtonEvent{pressed});',
+        'uint32_t s = ++t_isr; if (!buttonIsr.putFromISR(ButtonEvent{pressed, s})) t_fail++;')
     delay1, delayK = 'osDelay(1);', 'osDelay(2000);'
     rep('''  osThreadExit();
 }''', '''  @@BURST@@;

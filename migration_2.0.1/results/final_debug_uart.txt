@@ -1,0 +1,18 @@
+# elf: final_Debug.elf sha256=605e2f1281586343136415c51e6d93e28c0f7c83a234319f8c1db05fbfb26749
+# port: /dev/serial/by-id/usb-STMicroelectronics_STLINK-V3_002000353234510836303532-if02
+# start: 2026-10-04 01:01:49
+Welcome to STM32 world !
+
+=== STM32 FreeRTOS + CSP4CMSIS bootstrap ===
+
+--- Single Sender & Receiver + Button ISR ---
+Blue button released
+Send: 0 Received: 0
+Blue button released
+Send: 1 Received: 1
+Blue button released
+Send: 2 Received: 2
+
+# TIMEOUT after 20 s
+
+# end: 2026-10-04 01:02:10 (20 s)
