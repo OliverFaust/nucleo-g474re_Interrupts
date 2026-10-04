@@ -3,6 +3,8 @@
 #include <cstdio>
 
 #include "application.h"
+#include "cmsis_os2.h"
+#include "FreeRTOS.h"  // StaticTask_t: the control block of a statically created thread
 #include "csp/csp4cmsis.h"
 
 using namespace csp;
@@ -16,16 +18,21 @@ struct trigger_t {};
 
 using MessageType = unsigned int;
 
-// --- Channel for button events ---
-static Channel<ButtonEvent> buttonChan;
+// --- Channel for button events: written by the interrupt ---
+// An interrupt cannot use a rendezvous channel: it cannot wait for a partner. It writes into
+// a buffered channel instead, through the channel's ISR writer end. Capacity 1 with the
+// KeepNewest policy: the write never blocks and never fails; events that arrive while
+// ButtonProcess is still busy with the previous one replace each other, so the latest press
+// or release counts (this also absorbs contact bounce).
+static SamplingBufferedChannel<ButtonEvent, 1, BufferPolicy::KeepNewest> buttonChan;
+static IsrChanout<ButtonEvent> buttonIsr = buttonChan.isrWriter();
 
 static Channel<trigger_t> g_trigger_chan;
 static Channel<MessageType> counterChan;
 
 // --- C-callable function for the ISR ---
 extern "C" void csp_send_button_event(bool pressed) {
-  // putFromISR never blocks;
-  buttonChan.writer().putFromISR(ButtonEvent{pressed});
+  buttonIsr.putFromISR(ButtonEvent{pressed});  // never blocks; with KeepNewest always succeeds
 }
 
 class ButtonProcess : public CSProcessStatic<512> {
@@ -86,25 +93,44 @@ class Receiver : public CSProcessStatic<512> {
   }
 };
 
-void MainApp_Task(void* params) {
-  vTaskDelay(pdMS_TO_TICKS(10));
+// Start order. MainApp runs at a higher priority than the network it launches, so
+// Run(..., StaticNetwork) only creates the three process threads and returns: none of them
+// can preempt MainApp, and they first run after MainApp has printed its banner and exited.
+// All stay below CubeMX's defaultTask (osPriorityNormal), as before.
+static constexpr osPriority_t MAIN_APP_PRIORITY = osPriorityBelowNormal;
+static constexpr osPriority_t NETWORK_PRIORITY  = osPriorityLow;
+
+// MainApp's stack and control block are static: creating the thread takes no heap.
+// CMSIS-RTOS2 counts the stack in bytes: 384 words = 1.5 KB. Measured on the NUCLEO-G474RE:
+// MainApp uses 596 B (Debug, -O0) and 308 B (Release, -Os) of it.
+alignas(8) static uint32_t mainAppStack[384];
+static StaticTask_t mainAppControlBlock;
+
+void MainApp_Task(void* argument) {
+  (void)argument;
+  osDelay(10);
   printf("\r\n--- Single Sender & Receiver + Button ISR ---\r\n");
 
   static ButtonProcess buttonProc(buttonChan.reader(), g_trigger_chan.writer());
   static Sender sender(g_trigger_chan.reader(), counterChan.writer());
   static Receiver receiver(counterChan.reader());
 
-  Run(InParallel(sender, receiver, buttonProc), ExecutionMode::StaticNetwork);
+  Run(InParallel(sender, receiver, buttonProc), ExecutionMode::StaticNetwork, NETWORK_PRIORITY);
 
-  // Run() returns immediately in StaticNetwork mode; the task must
-  // delete itself rather than fall off the end of the function.
-  vTaskDelete(NULL);
+  // Run() returns immediately in StaticNetwork mode; the thread must
+  // end itself rather than fall off the end of the function.
+  osThreadExit();
 }
 
 void csp_app_main_init(void) {
-  BaseType_t status = xTaskCreate(MainApp_Task, "MainApp", 2048, NULL,
-                                  tskIDLE_PRIORITY + 3, NULL);
-  if (status != pdPASS) {
+  osThreadAttr_t attr = {};
+  attr.name       = "MainApp";
+  attr.stack_mem  = mainAppStack;
+  attr.stack_size = sizeof(mainAppStack);
+  attr.cb_mem     = &mainAppControlBlock;
+  attr.cb_size    = sizeof(mainAppControlBlock);
+  attr.priority   = MAIN_APP_PRIORITY;
+  if (osThreadNew(MainApp_Task, NULL, &attr) == NULL) {
     printf("ERROR: MainApp_Task creation failed!\r\n");
   }
 }
