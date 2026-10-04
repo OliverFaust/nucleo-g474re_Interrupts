@@ -132,9 +132,11 @@ Measured on the board (Debug and Release):
 - **Missing or garbled console lines when the button is pressed very rapidly**: ButtonProcess and Receiver both print. If they print at the same moment, the BSP's console driver drops the characters of the second one while the UART is busy (`__io_putchar()` ignores `HAL_BUSY`). The CSP events themselves are not lost.
 - **`configASSERT failed: <file>:<line>`** on the console: a FreeRTOS assertion failed at that source line; the program halts there.
 
-## License
+## License and Declaration
 
 MIT License – see the `LICENSE` file. CSP4CMSIS: MIT License, `lib/csp4cmsis/LICENSE`.
+
+Development of this project utilizes AI coding assistants for boilerplate generation, unit test creation, and architectural drafting. All core logic is manually reviewed and verified.
 
 ## Acknowledgments
 
