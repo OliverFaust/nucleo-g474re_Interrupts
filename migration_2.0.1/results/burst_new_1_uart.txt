@@ -1,0 +1,15 @@
+# elf: nucleo-g474re_Interrupts.elf sha256=a5cbe3fb9299fd384a23c7e8f3c2ba447aa7bccff2de772b868e6b7a900e2470
+# port: /dev/serial/by-id/usb-STMicroelectronics_STLINK-V3_002000353234510836303532-if02
+# start: 2026-10-04 01:03:20
+Welcome to STM32 world !
+
+=== STM32 FreeRTOS + CSP4CMSIS bootstrap ===
+
+--- Single Sender & Receiver + Button ISR ---
+Blue button released
+Blue button released
+Send: 1 Received: 1
+
+# TIMEOUT after 10 s
+
+# end: 2026-10-04 01:03:32 (10 s)

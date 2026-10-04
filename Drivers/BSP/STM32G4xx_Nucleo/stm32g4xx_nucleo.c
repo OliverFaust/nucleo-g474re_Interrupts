@@ -293,7 +293,7 @@ int32_t BSP_PB_Init(Button_TypeDef Button, ButtonMode_TypeDef ButtonMode)
   else /* (ButtonMode == BUTTON_MODE_EXTI) */
   {
     /* Configure Button pin as input with External interrupt */
-    gpio_init_structure.Mode = GPIO_MODE_IT_RISING_FALLING;
+    gpio_init_structure.Mode = GPIO_MODE_IT_RISING;
 
     HAL_GPIO_Init(BUTTON_PORT[Button], &gpio_init_structure);
 
@@ -384,7 +384,7 @@ int32_t BSP_COM_Init(COM_TypeDef COM, COM_InitTypeDef *COM_Init)
     /* Init the UART Msp */
     COM1_MspInit(&hcom_uart[COM]);
 #else
-    if(IsComMspCbValid == 0U)
+    if(IsComMspCbValid[COM] == 0U)
     {
       if(BSP_COM_RegisterDefaultMspCallbacks(COM) != BSP_ERROR_NONE)
       {

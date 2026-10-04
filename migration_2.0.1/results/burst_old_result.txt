@@ -1,0 +1,4 @@
+14 lines -> burst_old_uart.txt
+burst done=1 | interrupts=11 | putFromISR failures=10 | events delivered=1 | delivered seq: 1 
+burst done=1 | interrupts=11 | putFromISR failures=10 | events delivered=1 | delivered seq: 1 
+burst done=1 | interrupts=11 | putFromISR failures=10 | events delivered=1 | delivered seq: 1 
