@@ -5,7 +5,7 @@ A real‑time embedded demonstration of the **CSP (Communicating Sequential Proc
 ## Features
 
 - **FreeRTOS** with the CMSIS‑RTOS v2 API (STM32CubeMX `CMSIS_V2` interface)
-- **CSP4CMSIS 2.0.1** library for channel‑based, deterministic concurrency
+- **CSP4CMSIS 3.0.0** library for channel‑based, deterministic concurrency
 - **External interrupt** (blue button on PC13) on both edges: press and release
 - **Interrupt to process communication** through the ISR writer end (`isrWriter()`) of a buffered channel
 - **Trigger chain**: button release → ButtonProcess → Sender → Receiver
@@ -28,7 +28,7 @@ Tested with:
 | STM32CubeIDE | 2.1.0 (GNU Tools for STM32 14.3.rel1) |
 | STM32CubeMX (only to regenerate code) | 6.17.0 |
 | STM32Cube FW_G4 | V1.6.3 (FreeRTOS 10.3.1) |
-| CSP4CMSIS | 2.0.1, in `lib/csp4cmsis/` (unmodified; see `lib/csp4cmsis/VERSION`) |
+| CSP4CMSIS | 3.0.0, in `lib/csp4cmsis/` (unmodified; see `lib/csp4cmsis/VERSION`) |
 
 ## Serial Configuration
 
@@ -49,7 +49,7 @@ Tested with:
 5. Build the project (configuration `Debug` or `Release`).  
 6. Flash the binary to your Nucleo board.
 
-The CSP4CMSIS settings are already in the project (G++ compiler, Debug and Release): include path `../lib/csp4cmsis/inc`, and the defines `CSP4CMSIS_RTOS2_BACKEND_FREERTOS`, `CSP4CMSIS_MAX_SYSCALL_INTERRUPT_PRIORITY=5`, `CSP4CMSIS_STATIC_ALLOCATION` and `CSP4CMSIS_DEVICE_HEADER="stm32g4xx.h"` (explained in the [CSP4CMSIS STM32CubeIDE guide](https://github.com/OliverFaust/CSP4CMSIS/blob/main/Documentation/CSP4CMSIS_STM32CubeIDE.md)).
+The CSP4CMSIS settings are already in the project (G++ compiler, Debug and Release): include path `../lib/csp4cmsis/inc`, and the two defines `CSP4CMSIS_MAX_SYSCALL_INTERRUPT_PRIORITY=5` and `CSP4CMSIS_DEVICE_HEADER="stm32g4xx.h"`; CSP4CMSIS allocates its RTOS objects statically by default and finds FreeRTOS from `FreeRTOS.h` (explained in the [CSP4CMSIS STM32CubeIDE guide](https://github.com/OliverFaust/CSP4CMSIS/blob/main/Documentation/CSP4CMSIS_STM32CubeIDE.md)).
 
 ## Regenerating code with STM32CubeMX
 
@@ -60,7 +60,7 @@ The CSP4CMSIS settings are already in the project (G++ compiler, Debug and Relea
 ├── Core/            # main.c (CubeMX + button setup), application.cpp (the example)
 ├── Drivers/         # STM32 HAL, CMSIS and BSP drivers
 ├── Formal model/    # CSP-M model
-├── lib/csp4cmsis/   # CSP4CMSIS 2.0.1 (inc/, src/, LICENSE, VERSION)
+├── lib/csp4cmsis/   # CSP4CMSIS 3.0.0 (inc/, src/, LICENSE, VERSION)
 ├── Middlewares/     # FreeRTOS + CMSIS‑RTOS v2
 ├── nucleo-g474re_v10.ioc  # STM32CubeMX project
 └── README.md
@@ -71,7 +71,7 @@ The CSP4CMSIS settings are already in the project (G++ compiler, Debug and Relea
 1. **Hardware interrupt**: the blue button is on PC13, EXTI line 13 (`EXTI15_10_IRQn`). CubeMX's `BSP_PB_Init()` enables the rising edge (press); `main.c` (`USER CODE BSP`) adds the falling edge (release) and registers `ButtonExtiCallback()` as the button's EXTI callback. The interrupt path is `EXTI15_10_IRQHandler` → `BSP_PB_IRQHandler` → `HAL_EXTI_IRQHandler` → `ButtonExtiCallback()`, which reads the pin and calls `csp_send_button_event(pressed)`. The interrupt priority is 15 (set by the BSP), numerically above `configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY` (5), as required for an interrupt that calls into CSP4CMSIS.
 
 2. **Button channel**:
-   `SamplingBufferedChannel<ButtonEvent, 1, BufferPolicy::KeepNewest> buttonChan;` – a buffered channel with room for one event, written by the interrupt through its ISR writer end, `buttonChan.isrWriter()`.
+   `BufferedChannel<ButtonEvent, 1, BufferPolicy::KeepNewest> buttonChan;` – a buffered channel with room for one event, written by the interrupt through its ISR writer end, `buttonChan.isrWriter()`.
    - **Why not a rendezvous channel?** A rendezvous needs both partners to be ready at the same time, and an interrupt cannot wait. CSP4CMSIS therefore gives rendezvous channels no interrupt write path; an interrupt writes into a buffer.
    - **KeepNewest:** the write never blocks and never fails. If ButtonProcess is still busy with the previous event, a new event replaces the one waiting in the buffer: presses arriving in quick succession are **merged** into one event, and the latest press or release counts. This also absorbs contact bounce. Events are replaced, not queued: when ButtonProcess is ready again it gets the most recent state of the button, not the history.
    - The element type must be small (`sizeof(ButtonEvent)` ≤ 64 bytes, checked at compile time): it is copied with interrupts masked.
@@ -112,13 +112,13 @@ Each press of the blue button prints "Blue button pressed"; each release prints 
 
 Measured on the board (Debug and Release):
 
-- **FreeRTOS heap: not used.** `pvPortMalloc()` is never called (0 allocations). `ButtonProcess`, `Sender`, `Receiver`, `MainApp`, CubeMX's `defaultTask`, and FreeRTOS's idle and timer tasks all have static stacks and control blocks; the buffered button channel's semaphores are static too (`CSP4CMSIS_STATIC_ALLOCATION`), and the rendezvous channels need no RTOS objects. The FreeRTOS heap (`configTOTAL_HEAP_SIZE`) is therefore set to only 1 KB: enough for one small dynamically created thread (a 128‑word stack and its control block) if you switch one back to dynamic allocation.
+- **FreeRTOS heap: not used.** `pvPortMalloc()` is never called (0 allocations). `ButtonProcess`, `Sender`, `Receiver`, `MainApp`, CubeMX's `defaultTask`, and FreeRTOS's idle and timer tasks all have static stacks and control blocks; the buffered button channel's semaphores are static too (CSP4CMSIS's default, static allocation), and the rendezvous channels need no RTOS objects. The FreeRTOS heap (`configTOTAL_HEAP_SIZE`) is therefore set to only 1 KB: enough for one small dynamically created thread (a 128‑word stack and its control block) if you switch one back to dynamic allocation.
 - **C library heap: 1 KB.** newlib's `printf()` allocates its `stdout` buffer with `malloc()` on first use (1032 B from `_sbrk()`). This is the only dynamic allocation.
 - **Stacks used** (Debug; Release in brackets): `ButtonProcess` 340 B (308 B), `Sender` 320 B (212 B), `Receiver` 524 B (492 B), each of 2 KB; `MainApp` 596 B (308 B) of 1.5 KB; `defaultTask` 128 B (100 B) of 2 KB.
 
 ## Key CSP4CMSIS Concepts Demonstrated
 
-- **Buffered channel with a policy** – `SamplingBufferedChannel<T, 1, KeepNewest>`: the latest value counts.
+- **Buffered channel with a policy** – `BufferedChannel<T, 1, KeepNewest>`: the latest value counts.
 - **ISR writer end** – `isrWriter()`: the only way for an interrupt to send into the network; never blocks.
 - **Channel** – synchronous rendezvous between processes (`g_trigger_chan`, `counterChan`).
 - **Static network** – processes created once at start-up, with static stacks and control blocks, running for ever.
