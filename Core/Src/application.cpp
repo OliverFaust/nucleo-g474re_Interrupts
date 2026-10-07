@@ -24,7 +24,7 @@ using MessageType = unsigned int;
 // KeepNewest policy: the write never blocks and never fails; events that arrive while
 // ButtonProcess is still busy with the previous one replace each other, so the latest press
 // or release counts (this also absorbs contact bounce).
-static SamplingBufferedChannel<ButtonEvent, 1, BufferPolicy::KeepNewest> buttonChan;
+static BufferedChannel<ButtonEvent, 1, BufferPolicy::KeepNewest> buttonChan;
 static IsrChanout<ButtonEvent> buttonIsr = buttonChan.isrWriter();
 
 static Channel<trigger_t> g_trigger_chan;
