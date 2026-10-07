@@ -1,0 +1,14 @@
+15 lines -> irq_plain_Debug_1_uart.txt
+stack  ButtonProcess  2048 B: used   240 B, never touched  1808 B
+stack  Sender        2048 B: used   320 B, never touched  1728 B
+stack  Receiver      2048 B: used   532 B, never touched  1516 B
+thread ButtonProcess priority  8  name "ButtonProcess"
+thread Sender       priority  8  name "Sender"
+thread Receiver     priority  8  name "Receiver"
+stack  MainApp       1536 B: used   596 B, never touched   940 B
+stack  defaultTask   2048 B: used   128 B, never touched  1920 B
+thread MainApp      priority 16  name "MainApp"
+thread defaultTask  priority 24  name "defaultTask"
+FreeRTOS heap: free 0 B, minimum ever free 0 B, allocations 0, frees 0
+newlib sbrk: __sbrk_heap_end = 0x200046e0 (_end = 0x200042d8)
+EXTI line 13: IMR1=1 RTSR1=1 FTSR1=1; NVIC EXTI15_10 priority 15

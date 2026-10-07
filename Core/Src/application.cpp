@@ -43,15 +43,14 @@ class ButtonProcess : public CSProcessStatic<512> {
   ButtonProcess(Chanin<ButtonEvent> r, Chanout<trigger_t> w) : in(r), out(w) {}
   const char* name() const override { return "ButtonProcess"; }
 
+  // ButtonProcess does not print: the console is a shared resource, and only the Receiver
+  // uses it while the network runs. A press sends nothing; a release sends the trigger.
   void run() override {
     ButtonEvent ev;
     trigger_t t;
     while (true) {
       in >> ev;
-      if (ev.pressed) {
-        printf("Blue button pressed\r\n");
-      } else {
-        printf("Blue button released\r\n");
+      if (!ev.pressed) {
         out << t;
       }
     }
@@ -88,7 +87,9 @@ class Receiver : public CSProcessStatic<512> {
     MessageType received;
     while (true) {
       in >> received;
-      printf("Send: %u Received: %u\r\n", received, received);
+      // Each value stands for one button release: ButtonProcess sends one trigger per
+      // release, and the Sender one value per trigger.
+      printf("Blue button released: Send: %u Received: %u\r\n", received, received);
     }
   }
 };

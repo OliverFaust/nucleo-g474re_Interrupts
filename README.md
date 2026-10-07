@@ -77,13 +77,13 @@ The CSP4CMSIS settings are already in the project (G++ compiler, Debug and Relea
    - The element type must be small (`sizeof(ButtonEvent)` ≤ 64 bytes, checked at compile time): it is copied with interrupts masked.
 
 3. **ButtonProcess**:
-   Waits on `buttonChan`. For each event it prints the state (`"Blue button pressed"` or `"Blue button released"`); on a **release** it sends a `trigger_t` message to the Sender through `g_trigger_chan` (a rendezvous channel).
+   Waits on `buttonChan`. On a **release** it sends a `trigger_t` message to the Sender through `g_trigger_chan` (a rendezvous channel); a press sends nothing. It does not print.
 
 4. **Sender**:
    Waits for a trigger on `g_trigger_chan`. Each trigger causes the Sender to send an ever‑incrementing `unsigned int` (which rolls over from `UINT_MAX` to `0`) to the Receiver through `counterChan` (a rendezvous channel).
 
 5. **Receiver**:
-   Waits on `counterChan`, reads the number, and prints `Send: X Received: X` (the received value, twice).
+   Waits on `counterChan`, reads the number, and prints `Blue button released: Send: X Received: X` (the received value, twice). Each value stands for one release: ButtonProcess sends one trigger per release, and the Sender one value per trigger.
 
 6. **Start-up**: `main.c` calls `csp_app_main_init()`, which creates the `MainApp` thread (static 1.5 KB stack). `MainApp` prints the banner, starts the three processes with `Run(InParallel(sender, receiver, buttonProc), ExecutionMode::StaticNetwork, osPriorityLow)` and exits. `MainApp` runs at a higher priority (`osPriorityBelowNormal`), so the processes first run after it has exited.
 
@@ -95,18 +95,14 @@ Welcome to STM32 world !
 === STM32 FreeRTOS + CSP4CMSIS bootstrap ===
 
 --- Single Sender & Receiver + Button ISR ---
-Blue button pressed
-Blue button released
-Send: 0 Received: 0
-Blue button pressed
-Blue button released
-Send: 1 Received: 1
-Blue button pressed
-Blue button released
-Send: 2 Received: 2
+Blue button released: Send: 0 Received: 0
+Blue button released: Send: 1 Received: 1
+Blue button released: Send: 2 Received: 2
 ...
 ```
-Each press of the blue button prints "Blue button pressed"; each release prints "Blue button released" and triggers a counter increment. The counter continues indefinitely, rolling over automatically.
+Each release of the blue button triggers a counter increment, and the Receiver prints one line for it. The counter continues indefinitely, rolling over automatically.
+
+**The console has one owner:** it is a shared resource, and the BSP's console driver (`__io_putchar()`) silently drops the characters of a second thread that prints while the UART is busy, so only the Receiver, the end of the pipeline, prints while the network runs (MainApp prints its banner before the processes start, at a higher priority).
 
 ## Memory
 
@@ -128,8 +124,8 @@ Measured on the board (Debug and Release):
 ## Troubleshooting
 
 - **No output on serial**: Verify the baud rate and that the correct COM port (the ST‑LINK virtual COM port) is used.
-- **Only "Blue button pressed", no release**: the falling edge is not enabled. It is set in `main.c`, `USER CODE BSP`, after CubeMX's `BSP_PB_Init()` (which enables the rising edge only).
-- **Missing or garbled console lines when the button is pressed very rapidly**: ButtonProcess and Receiver both print. If they print at the same moment, the BSP's console driver drops the characters of the second one while the UART is busy (`__io_putchar()` ignores `HAL_BUSY`). The CSP events themselves are not lost.
+- **No output when the button is released**: the falling edge is not enabled. It is set in `main.c`, `USER CODE BSP`, after CubeMX's `BSP_PB_Init()` (which enables the rising edge only).
+- **Fewer lines than button releases when the button is pressed very rapidly**: by design. Events that arrive while ButtonProcess is still busy are merged (KeepNewest), so several quick releases can produce one trigger.
 - **`configASSERT failed: <file>:<line>`** on the console: a FreeRTOS assertion failed at that source line; the program halts there.
 
 ## License and Declaration

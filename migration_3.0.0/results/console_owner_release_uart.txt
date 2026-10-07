@@ -1,0 +1,15 @@
+# elf: irq_plain_Release.elf sha256=a114e96b9b44dca0ef5b703b8ffc615dbc57909ec17f0b703160a8935238b5f7
+# port: /dev/serial/by-id/usb-STMicroelectronics_STLINK-V3_002000353234510836303532-if02
+# start: 2026-10-07 19:08:09
+Welcome to STM32 world !
+
+=== STM32 FreeRTOS + CSP4CMSIS bootstrap ===
+
+--- Single Sender & Receiver + Button ISR ---
+Blue button released: Send: 0 Received: 0
+Blue button released: Send: 1 Received: 1
+Blue button released: Send: 2 Received: 2
+
+# TIMEOUT after 20 s
+
+# end: 2026-10-07 19:08:30 (20 s)
