@@ -110,7 +110,7 @@ static StaticTask_t mainAppControlBlock;
 void MainApp_Task(void* argument) {
   (void)argument;
   osDelay(10);
-  printf("\r\n--- Single Sender & Receiver + Button ISR ---\r\n");
+  printf("\r\n--- Single Sender & Receiver + Button ISR (Zero-Heap) ---\r\n");
 
   static ButtonProcess buttonProc(buttonChan.reader(), g_trigger_chan.writer());
   static Sender sender(g_trigger_chan.reader(), counterChan.writer());

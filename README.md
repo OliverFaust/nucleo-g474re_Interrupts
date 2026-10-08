@@ -10,7 +10,7 @@ A real‑time embedded demonstration of the **CSP (Communicating Sequential Proc
 - **Interrupt to process communication** through the ISR writer end (`isrWriter()`) of a buffered channel
 - **Trigger chain**: button release → ButtonProcess → Sender → Receiver
 - **Roll‑over counter** sent from Sender to Receiver (unsigned integer)
-- **No FreeRTOS heap allocation**: every thread's stack and control block, and the channel's semaphores, are static (see [Memory](#memory))
+- Zero heap: no FreeRTOS heap and no C library heap allocation (see [Memory](#memory))
 - **Serial console output** via LPUART1, the ST‑LINK virtual COM port (115200 baud)
 
 ## Hardware Requirements
@@ -94,7 +94,7 @@ Welcome to STM32 world !
 
 === STM32 FreeRTOS + CSP4CMSIS bootstrap ===
 
---- Single Sender & Receiver + Button ISR ---
+--- Single Sender & Receiver + Button ISR (Zero-Heap) ---
 Blue button released: Send: 0 Received: 0
 Blue button released: Send: 1 Received: 1
 Blue button released: Send: 2 Received: 2
@@ -109,7 +109,8 @@ Each release of the blue button triggers a counter increment, and the Receiver p
 Measured on the board (Debug and Release):
 
 - **FreeRTOS heap: not used.** `pvPortMalloc()` is never called (0 allocations). `ButtonProcess`, `Sender`, `Receiver`, `MainApp`, CubeMX's `defaultTask`, and FreeRTOS's idle and timer tasks all have static stacks and control blocks; the buffered button channel's semaphores are static too (CSP4CMSIS's default, static allocation), and the rendezvous channels need no RTOS objects. The FreeRTOS heap (`configTOTAL_HEAP_SIZE`) is therefore set to only 1 KB: enough for one small dynamically created thread (a 128‑word stack and its control block) if you switch one back to dynamic allocation.
-- **C library heap: 1 KB.** newlib's `printf()` allocates its `stdout` buffer with `malloc()` on first use (1032 B from `_sbrk()`). This is the only dynamic allocation.
+- **C library heap: not used.** `main.c` (USER CODE 2) makes `stdout` unbuffered with `setvbuf(stdout, NULL, _IONBF, 0)`; otherwise newlib's `printf()` would `malloc()` a 1 KB `stdout` buffer on first use (measured: 1032 B). With it, `_sbrk()` is never called.
+- So the program allocates no heap memory at all: the "(Zero-Heap)" in the start-up banner is literal.
 - **Stacks used** (Debug; Release in brackets): `ButtonProcess` 340 B (308 B), `Sender` 320 B (212 B), `Receiver` 524 B (492 B), each of 2 KB; `MainApp` 596 B (308 B) of 1.5 KB; `defaultTask` 128 B (100 B) of 2 KB.
 
 ## Key CSP4CMSIS Concepts Demonstrated
