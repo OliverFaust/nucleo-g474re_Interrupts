@@ -24,3 +24,8 @@
    console driver silently drops the characters of a second thread that prints while the UART is busy (the
    2.0.1 and 3.0.0 burst tests lost `Send: 0 Received: 0` this way), so one process owns it. The output
    listing and the troubleshooting entries change accordingly; in the burst test both lines now appear.
+7. **No heap at all (branch `unbuffered-stdout`):** `main.c` (USER CODE 2) makes `stdout` unbuffered with
+   `setvbuf(stdout, NULL, _IONBF, 0)`, so newlib's `printf()` no longer allocates its 1 KB `stdout` buffer:
+   `_sbrk()` is never called (measured), as in Alternation and the Sensor chapter. The start-up banner
+   becomes `--- Single Sender & Receiver + Button ISR (Zero-Heap) ---` (as in those two chapters), and the text can say that the program
+   allocates no heap memory at all (FreeRTOS heap: 0 allocations; C library heap: not used).
