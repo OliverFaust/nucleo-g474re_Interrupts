@@ -4,122 +4,93 @@
 
 #include "application.h"
 #include "cmsis_os2.h"
-#include "FreeRTOS.h"  // StaticTask_t: the control block of a statically created thread
+#include "FreeRTOS.h"  // StaticTask_t
 #include "csp/csp4cmsis.h"
 
 using namespace csp;
 
-// --- Button event type ---
-struct ButtonEvent {
-  bool pressed;  // true = pressed, false = released
-};
+// Written by the interrupt: true = pressed, false = released. An interrupt cannot wait for a
+// partner, so it writes into a buffered channel. KeepNewest: an event that arrives while the
+// previous one is still waiting replaces it (contact bounce, quick presses).
+static BufferedChannel<bool, 1, BufferPolicy::KeepNewest> buttonChan;
+static Channel<bool> triggerChan;
+static Channel<unsigned int> counterChan;
 
-struct trigger_t {};
-
-using MessageType = unsigned int;
-
-// --- Channel for button events: written by the interrupt ---
-// An interrupt cannot use a rendezvous channel: it cannot wait for a partner. It writes into
-// a buffered channel instead, through the channel's ISR writer end. Capacity 1 with the
-// KeepNewest policy: the write never blocks and never fails; events that arrive while
-// ButtonProcess is still busy with the previous one replace each other, so the latest press
-// or release counts (this also absorbs contact bounce).
-static BufferedChannel<ButtonEvent, 1, BufferPolicy::KeepNewest> buttonChan;
-static IsrChanout<ButtonEvent> buttonIsr = buttonChan.isrWriter();
-
-static Channel<trigger_t> g_trigger_chan;
-static Channel<MessageType> counterChan;
-
-// --- C-callable function for the ISR ---
+// Called from the EXTI interrupt (main.c).
 extern "C" void csp_send_button_event(bool pressed) {
-  buttonIsr.putFromISR(ButtonEvent{pressed});  // never blocks; with KeepNewest always succeeds
+  buttonChan.isrWriter().putFromISR(pressed);
 }
 
 class ButtonProcess : public CSProcessStatic<512> {
-  Chanin<ButtonEvent> in;
-  Chanout<trigger_t> out;
+  Chanin<bool> in;
+  Chanout<bool> out;
 
  public:
-  ButtonProcess(Chanin<ButtonEvent> r, Chanout<trigger_t> w) : in(r), out(w) {}
-  const char* name() const override { return "ButtonProcess"; }
+  ButtonProcess(Chanin<bool> r, Chanout<bool> w) : in(r), out(w) {}
 
-  // ButtonProcess does not print: the console is a shared resource, and only the Receiver
-  // uses it while the network runs. A press sends nothing; a release sends the trigger.
   void run() override {
-    ButtonEvent ev;
-    trigger_t t;
+    bool pressed;
     while (true) {
-      in >> ev;
-      if (!ev.pressed) {
-        out << t;
+      in >> pressed;
+      if (!pressed) {
+        out << true;  // a release triggers the Sender
       }
     }
   }
 };
 
 class Sender : public CSProcessStatic<512> {
-  Chanin<trigger_t> in;
-  Chanout<MessageType> out;
+  Chanin<bool> in;
+  Chanout<unsigned int> out;
 
  public:
-  Sender(Chanin<trigger_t> r, Chanout<MessageType> w) : in(r), out(w) {}
-  const char* name() const override { return "Sender"; }
+  Sender(Chanin<bool> r, Chanout<unsigned int> w) : in(r), out(w) {}
 
   void run() override {
     unsigned int counter = 0;
-    trigger_t t;
+    bool trigger;
     while (true) {
-      in >> t;
-      out << counter;
-      counter++;
+      in >> trigger;
+      out << counter++;
     }
   }
 };
 
 class Receiver : public CSProcessStatic<512> {
-  Chanin<MessageType> in;
+  Chanin<unsigned int> in;
 
  public:
-  Receiver(Chanin<MessageType> r) : in(r) {}
-  const char* name() const override { return "Receiver"; }
+  explicit Receiver(Chanin<unsigned int> r) : in(r) {}
 
   void run() override {
-    MessageType received;
+    unsigned int received;
     while (true) {
       in >> received;
-      // Each value stands for one button release: ButtonProcess sends one trigger per
-      // release, and the Sender one value per trigger.
+      // The only process that prints: two threads printing at once would lose characters.
       printf("Blue button released: Send: %u Received: %u\r\n", received, received);
     }
   }
 };
 
-// Start order. MainApp runs at a higher priority than the network it launches, so
-// Run(..., StaticNetwork) only creates the three process threads and returns: none of them
-// can preempt MainApp, and they first run after MainApp has printed its banner and exited.
-// All stay below CubeMX's defaultTask (osPriorityNormal), as before.
+// MainApp runs above the network, so the processes first run after MainApp has printed
+// its banner and exited.
 static constexpr osPriority_t MAIN_APP_PRIORITY = osPriorityBelowNormal;
 static constexpr osPriority_t NETWORK_PRIORITY  = osPriorityLow;
 
-// MainApp's stack and control block are static: creating the thread takes no heap.
-// CMSIS-RTOS2 counts the stack in bytes: 384 words = 1.5 KB. Measured on the NUCLEO-G474RE:
-// MainApp uses 596 B (Debug, -O0) and 308 B (Release, -Os) of it.
+// Static stack (384 words = 1.5 KB) and control block: no heap.
 alignas(8) static uint32_t mainAppStack[384];
 static StaticTask_t mainAppControlBlock;
 
 void MainApp_Task(void* argument) {
   (void)argument;
   osDelay(10);
-  printf("\r\n--- Single Sender & Receiver + Button ISR ---\r\n");
+  printf("\r\n--- Single Sender & Receiver + Button ISR (Zero-Heap) ---\r\n");
 
-  static ButtonProcess buttonProc(buttonChan.reader(), g_trigger_chan.writer());
-  static Sender sender(g_trigger_chan.reader(), counterChan.writer());
+  static ButtonProcess buttonProc(buttonChan.reader(), triggerChan.writer());
+  static Sender sender(triggerChan.reader(), counterChan.writer());
   static Receiver receiver(counterChan.reader());
 
   Run(InParallel(sender, receiver, buttonProc), ExecutionMode::StaticNetwork, NETWORK_PRIORITY);
-
-  // Run() returns immediately in StaticNetwork mode; the thread must
-  // end itself rather than fall off the end of the function.
   osThreadExit();
 }
 
