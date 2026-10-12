@@ -1,22 +1,16 @@
-// application.cpp
-
 #include <cstdio>
 
 #include "application.h"
 #include "cmsis_os2.h"
-#include "FreeRTOS.h"  // StaticTask_t
+#include "FreeRTOS.h"
 #include "csp/csp4cmsis.h"
 
 using namespace csp;
 
-// Written by the interrupt: true = pressed, false = released. An interrupt cannot wait for a
-// partner, so it writes into a buffered channel. KeepNewest: an event that arrives while the
-// previous one is still waiting replaces it (contact bounce, quick presses).
 static BufferedChannel<bool, 1, BufferPolicy::KeepNewest> buttonChan;
 static Channel<bool> triggerChan;
 static Channel<unsigned int> counterChan;
 
-// Called from the EXTI interrupt (main.c).
 extern "C" void csp_send_button_event(bool pressed) {
   buttonChan.isrWriter().putFromISR(pressed);
 }
@@ -33,7 +27,7 @@ class ButtonProcess : public CSProcessStatic<512> {
     while (true) {
       in >> pressed;
       if (!pressed) {
-        out << true;  // a release triggers the Sender
+        out << true;
       }
     }
   }
@@ -66,18 +60,14 @@ class Receiver : public CSProcessStatic<512> {
     unsigned int received;
     while (true) {
       in >> received;
-      // The only process that prints: two threads printing at once would lose characters.
       printf("Blue button released: Send: %u Received: %u\r\n", received, received);
     }
   }
 };
 
-// MainApp runs above the network, so the processes first run after MainApp has printed
-// its banner and exited.
 static constexpr osPriority_t MAIN_APP_PRIORITY = osPriorityBelowNormal;
 static constexpr osPriority_t NETWORK_PRIORITY  = osPriorityLow;
 
-// Static stack (384 words = 1.5 KB) and control block: no heap.
 alignas(8) static uint32_t mainAppStack[384];
 static StaticTask_t mainAppControlBlock;
 
